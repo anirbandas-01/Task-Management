@@ -1,25 +1,40 @@
 import jwt from "jsonwebtoken";
 
-const authMiddleware = (req, res, next) => {
-    const token = req.header("Authorization");
+export const verifyToken = (req, res, next) => {
+    
+    try {
 
-    if(!token){
-        return res.status(401).json({
-            message: "No token"
-        });
-       }
+        const authHeader = req.headers.authorization;
 
-        try {
-            
-            const verified = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = verified;
-            next();
-
-        } catch (error) {
-            res.status(400).json({
-                message: "Invalid token"
+        if(!authHeader){
+            return res.status(401).json({
+                message: "No token provided"
             });
         }
-};
 
-export default authMiddleware;
+        if (!authHeader.startsWith("Bearer ")){
+            return res.status(401).json({
+                message: "Invalid token format"
+            });
+        }
+
+
+        const token = authHeader.split(" ")[1];
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        req.user = decoded;
+
+        next();
+    } catch (error) {
+        if(error.name === "TokenExpiredError") {
+            return res.status(401).json({
+                message: "Token expired, please login again"
+            });
+        }
+
+        return res.status(401).json({
+            message: "Invalid token"
+        });
+    }
+};
