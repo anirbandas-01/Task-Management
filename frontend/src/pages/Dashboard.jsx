@@ -7,8 +7,14 @@ const Dashboard = () => {
     const [title, setTitle] = useState("");
 
     const fetchTasks = async () => {
-        const res = await API.get("/tasks");
-        setTasks(res.data.tasks);
+        try {
+            const res = await API.get("/tasks");
+            console.log("Tasks from API:", res.data);
+            setTasks(res.data);
+        } catch (error) {
+            console.error("Error fetching tasks:", error);
+            setTasks([]);
+        }
     };
 
     useEffect(()=> {
@@ -16,19 +22,40 @@ const Dashboard = () => {
     }, []);
 
     const addTask = async () => {
-        await API.post("/tasks", { title });
-        setTitle("");
-        fetchTasks();
+
+        if(!title.trim()) return;
+
+        try {
+            await API.post("/tasks", { title });
+            setTitle("");
+            fetchTasks();
+        } catch (error) {
+            console.error("Error adding task:", error);
+        }
     };
 
     const deleteTask = async (id) => {
-        await API.delete(`/tasks/${id}`);
-        fetchTasks();
+        try {
+           await API.delete(`/tasks/${id}`);
+           fetchTasks();
+        } catch (error) {
+    
+       }
     };
 
-    const completeTask = async (id) => {
-        await API.put(`/tasks/${id}`);
-        fetchTasks();
+    const completeTask = async (task) => {
+
+        console.log("complete task:", task);
+
+        try {
+            await API.put(`/tasks/${task.id}`, {
+                title: task.title,
+                status: task.status === 'pending' ? 'completed' : 'pending'
+            });
+            fetchTasks();
+        } catch (error) {
+            console.error("Error updating task:", error);
+        }
     };
 
 
@@ -50,7 +77,7 @@ const Dashboard = () => {
             <div key={t.id} className='flex justify-between border p-2 mb-2'>
                 <span>{t.title} - {t.status}</span>
                 <div className='flex gap-2'>
-                    <button className='text-green-500' onClick={()=>completeTask(t.id)}>+</button>
+                    <button className='text-green-500' onClick={()=>completeTask(t)}>+</button>
                     <button className='text-red-500' onClick={()=>deleteTask(t.id)}>-</button>
                 </div>
             </div>
